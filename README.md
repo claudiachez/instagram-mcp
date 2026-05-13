@@ -1,5 +1,7 @@
 # instagram-mcp
 
+![Demo](docs/demo.gif)
+
 [![PyPI version](https://img.shields.io/pypi/v/instagram-mcp.svg)](https://pypi.org/project/instagram-mcp/)
 [![Python versions](https://img.shields.io/pypi/pyversions/instagram-mcp.svg)](https://pypi.org/project/instagram-mcp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
