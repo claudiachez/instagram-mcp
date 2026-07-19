@@ -61,7 +61,7 @@ def main() -> None:
     print("[2/3] Listing your Pages with linked Instagram accounts...")
     pages = _api(
         "me/accounts",
-        fields="name,instagram_business_account{id,username},access_token",
+        fields="id,name,instagram_business_account{id,username},access_token",
         access_token=long_user,
     )["data"]
     linked = [p for p in pages if p.get("instagram_business_account")]
@@ -86,7 +86,8 @@ def main() -> None:
     page_token = page["access_token"]
     ig_user_id = page["instagram_business_account"]["id"]
     ig_username = page["instagram_business_account"]["username"]
-    print(f"      selected @{ig_username}.")
+    fb_page_id = page["id"]
+    print(f"      selected @{ig_username}  (IG user ID {ig_user_id}, Page ID {fb_page_id}).")
 
     print("[3/3] Writing .env...")
     env_path = pathlib.Path(".env")
@@ -103,6 +104,14 @@ def main() -> None:
         print(f"      existing .env backed up to {backup}")
     env_path.write_text(contents)
     print(f"      wrote {env_path.resolve()}")
+
+    alias = ig_username.replace(".", "_")
+    print("\nFor a multi-account setup, add this entry to IG_ACCOUNTS:")
+    print(
+        json.dumps(
+            {alias: {"user_id": ig_user_id, "token": page_token, "fb_page_id": fb_page_id}}
+        )
+    )
 
     print("\nAll set. Test it with:")
     print(
