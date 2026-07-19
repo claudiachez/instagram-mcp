@@ -1,12 +1,13 @@
 [project]
 name = "instagram-mcp"
 version = "0.1.1"
-description = "Model Context Protocol server for the Instagram Graph API (Business/Creator accounts)."
+description = "Multi-account Instagram + Facebook Pages MCP server (Graph API), with a plugin and guided onboarding."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
     { name = "Syed Aleem" },
+    { name = "Claudia Chez" },
 ]
 keywords = ["mcp", "instagram", "graph-api", "claude", "anthropic", "fastmcp"]
 classifiers = [
@@ -37,10 +38,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/AleemHaider/instagram-mcp"
-Repository = "https://github.com/AleemHaider/instagram-mcp"
-Issues = "https://github.com/AleemHaider/instagram-mcp/issues"
-Changelog = "https://github.com/AleemHaider/instagram-mcp/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/claudiachez/instagram-mcp"
+Repository = "https://github.com/claudiachez/instagram-mcp"
+Issues = "https://github.com/claudiachez/instagram-mcp/issues"
+Changelog = "https://github.com/claudiachez/instagram-mcp/blob/main/CHANGELOG.md"
 
 [project.scripts]
 instagram-mcp = "instagram_mcp.__main__:main"

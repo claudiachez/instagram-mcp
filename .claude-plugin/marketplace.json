@@ -1,6 +1,6 @@
 {
   "name": "instagram-social-marketplace",
-  "owner": { "name": "Fork of AleemHaider/instagram-mcp" },
+  "owner": { "name": "Claudia Chez" },
   "plugins": [
     {
       "name": "instagram-social",

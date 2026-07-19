@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "description": "Instagram + Facebook Pages via Graph API: publish, comments, DMs, hashtag search, insights. Multi-account fork with version watchdog.",
   "author": {
-    "name": "Fork of AleemHaider/instagram-mcp"
+    "name": "Claudia Chez (fork of AleemHaider/instagram-mcp)"
   },
   "server": {
     "type": "python",
