@@ -11,5 +11,5 @@ if [ -n "${IG_ACCOUNTS:-}" ] || [ -f "$CFG" ]; then
 fi
 
 cat <<'JSON'
-{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"The Instagram Social plugin is installed but no accounts are connected yet. If the user wants to post to or manage Instagram or Facebook Pages, offer to run the guided setup skill 'connect-accounts' to connect their first account."}}
+{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"The Instagram Social plugin is installed but no accounts are connected yet. If the user wants to post to or manage Instagram or Facebook Pages, offer to run the guided setup skill 'connect-meta-account' to connect their first account."}}
 JSON

@@ -1,6 +1,6 @@
 {
   "name": "instagram-social",
-  "description": "Multi-account Instagram + Facebook Pages via the Graph API. Includes a guided setup skill that walks you through connecting each account. Run /instagram-social:connect-accounts to begin.",
+  "description": "Multi-account Instagram + Facebook Pages via the Graph API. Includes a guided setup skill that walks you through connecting each account. Run /instagram-social:connect-meta-account to begin.",
   "version": "1.0.0",
   "author": { "name": "Claudia Chez (fork of AleemHaider/instagram-mcp)" },
   "homepage": "https://github.com/claudiachez/instagram-mcp"

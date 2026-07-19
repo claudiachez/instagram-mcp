@@ -21,17 +21,22 @@ In Claude → **Settings → Directory → Plugins → Add marketplace**, paste 
 https://github.com/claudiachez/instagram-mcp
 ```
 
-Click **Sync**, then install the **instagram-social** plugin. (It runs via the free
-[`uv`](https://docs.astral.sh/uv/getting-started/installation/) runtime — if it's
-missing, Claude will point you to the one-line installer.)
+Click **Sync**, then install the **instagram-social** plugin.
 
 Then just ask Claude:
 
 > Connect my Instagram account
 
-The guided setup (`/instagram-social:connect-accounts`) walks you through generating a
-key and saving the account. Repeat for each account. A welcome nudge reminds you until
-at least one account is connected.
+The guided setup (`/instagram-social:connect-meta-account`) walks you through generating a
+key and saving the account. Repeat for each account. A welcome nudge reminds you until at
+least one account is connected.
+
+> **The plugin runs via `uv`** (a small, fast Python runner). Install it once with whatever
+> you trust — `brew install uv` (Homebrew) or `pip3 install uv` (from PyPI); the
+> [official installer](https://docs.astral.sh/uv/) is from Astral, the makers of the Ruff
+> linter. **Don't want to install anything?** Use the
+> [Claude Desktop extension (`.mcpb`)](#alternative-claude-desktop-extension-mcpb) instead —
+> it bundles everything and needs no `uv`.
 
 ## Everyday use
 
