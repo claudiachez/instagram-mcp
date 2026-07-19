@@ -29,7 +29,9 @@ Then just ask Claude:
 
 The guided setup (`/instagram-social:connect-meta-account`) walks you through generating a
 key and saving the account. Repeat for each account. A welcome nudge reminds you until at
-least one account is connected.
+least one account is connected. **First time?** It asks whether you already have a Meta app
+and helps you create one (free, ~5 min) if not — see
+[First-time: your own Meta app](#first-time-your-own-meta-app).
 
 > **The plugin runs via `uv`** (a small, fast Python runner). Install it once with whatever
 > you trust — `brew install uv` (Homebrew) or `pip3 install uv` (from PyPI); the
@@ -149,6 +151,24 @@ priority order, from:
 - Per-account `graph_version` / `host` override the global `IG_GRAPH_VERSION` /
   `IG_GRAPH_HOST` (defaults: `v21.0`, `graph.facebook.com`).
 
+### First-time: your own Meta app
+
+This tool uses a **developer app on Meta's platform** (an **App ID** + **App Secret**) as its
+key to the Graph API. Because the app runs in **Development mode**, only people added to it can
+generate working tokens — so there are two ways to run it:
+
+- **Bring your own app (public):** each person creates their **own** free Meta app (~5 min) and
+  uses their own App ID + Secret. Nothing is shared. The guided setup asks whether you have an
+  app and walks you through creating one if not.
+- **Shared team app:** one person creates the app and **adds teammates to it** (App roles →
+  developer/tester), then shares the App ID + Secret — teammates skip app creation.
+
+To create one: [developers.facebook.com/apps](https://developers.facebook.com/apps) →
+**Create app** → use case **Other** → type **Business** → add the **Instagram** product →
+**API setup with Facebook login** (not Basic Display). Leave it in Development mode; grab the
+**App ID / App Secret** from **App settings → Basic**. (Public distribution to strangers would
+require Meta **App Review** — not needed for personal or team use.)
+
 ### Generating keys (the get-token helper)
 
 ```bash
@@ -182,10 +202,11 @@ version breaks). Merging the PR auto-builds a fresh release. Details in
 
 ## For teammates
 
-They install the plugin the same way, then either run the guided setup for their own
-accounts or you privately share your accounts JSON for them to paste. **Never share tokens
-over open chat or email.** Creating keys for a brand-new account requires being added to
-the Meta app first (an admin does this once).
+They install the plugin the same way. For a **shared team app**, add each teammate to your
+Meta app (App roles → developer/tester) and give them the App ID + Secret; they then run the
+guided setup for their own accounts. **Independent users** each create their own free Meta app
+(the guided setup walks them through it). Either way, tokens stay on each person's machine —
+**never share tokens over open chat or email.**
 
 ## Alternative: Claude Desktop extension (`.mcpb`)
 

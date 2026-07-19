@@ -6,67 +6,79 @@ description: Guide the user through connecting an Instagram Business/Creator acc
 # Connect an Instagram / Facebook account
 
 Walk a possibly non-technical user through connecting one or more accounts so the
-Instagram and Facebook Page tools work. Be friendly, do one step at a time, explain
-jargon in plain terms, and confirm each step before moving on. ~2 minutes per account.
+Instagram and Facebook Page tools work. Be friendly, do ONE step at a time, explain
+jargon in plain terms, and confirm each step before moving on. ~2–7 minutes total.
 
-## First, explain what's needed (in plain terms)
+## Step 0 — Make sure they have a Meta app (ASK FIRST, then branch)
 
-This tool talks to Instagram and Facebook through a **developer app on Meta's platform**
-— the "app" someone on the team registered at developers.facebook.com. Think of it as the
-software key that lets this tool act on your accounts. Two values identify it:
+This tool talks to Instagram/Facebook through a **developer app on Meta's platform**
+(registered at developers.facebook.com) — think of it as the software key that lets the
+tool act on your accounts. It's identified by an **App ID** (public) and **App Secret**
+(private password).
 
-- **App ID** — a public number that names the app.
-- **App Secret** — a private password for the app (treat it like a password).
+**Ask the user which of these is true, and branch — don't make them do steps they don't need:**
 
-Tell the user:
-- If **they** set up this tool, they already have these — in the Meta developer dashboard
-  under **App settings → Basic** (the App Secret is behind a "Show" button).
-- If a **teammate/admin** set it up, they should ask that person for the App ID and App
-  Secret — **and** the admin must first **add them to the app** (as a developer or tester),
-  or the keys won't authenticate.
+- **"I already have a Meta app (App ID + App Secret)."** → Great, skip to **Step 1**.
+- **"My team/organization has one."** → They ask their admin for the **App ID + App Secret**,
+  and the admin must **add them to the app** first (App roles → add as developer or tester),
+  or the keys won't authenticate. Then go to **Step 1**.
+- **"I don't have one."** → Walk them through creating their own (free, ~5 min) below, then
+  go to **Step 1**.
 
-Also confirm the runtime `uv` is installed (see "Installing uv" at the bottom).
+### Creating a Meta app (only if they don't have one)
 
-## Steps
+1. Go to https://developers.facebook.com/apps → **Create app**.
+2. **Use case: Other** → Next → **App type: Business** → Next.
+3. Name it (e.g. "My Social Manager"), add their email, optionally attach a Business
+   portfolio → **Create app**. (Meta may re-prompt for their Facebook password — that's normal.)
+4. In the dashboard: **Add product → Instagram → Set up**, then choose
+   **"API setup with Facebook login"** (the Graph API path — NOT Basic Display).
+5. Leave the app in **Development mode**. That's fine — as the app's own admin they get full
+   access to their own accounts; no Meta App Review is needed for personal/internal use.
+6. Copy the **App ID** and **App Secret** from **App settings → Basic** (App Secret is behind
+   a "Show" button).
 
-1. **Set expectations.** One permanent key per account, ~2 minutes each, nothing destructive.
+## Step 1 — Get a short-lived token
 
-2. **Get a short-lived token.** Ask them to:
-   - Open the Graph API Explorer: https://developers.facebook.com/tools/explorer
-   - Top-right: select their app, set token type to **User Token**.
-   - Add these 7 permissions, click **Generate Access Token**, log in, choose the Pages
-     they manage, and **Continue** (add `instagram_manage_messages` too if they want DMs):
-     `instagram_basic`, `instagram_content_publish`, `instagram_manage_comments`,
-     `instagram_manage_insights`, `pages_show_list`, `pages_read_engagement`,
-     `business_management`
-   - Copy the token (short-lived, ~1 hour — fine).
+Ask them to:
+- Open the Graph API Explorer: https://developers.facebook.com/tools/explorer
+- Top-right: select their app, set token type to **User Token**.
+- Add these 7 permissions, click **Generate Access Token**, log in, choose the Pages they
+  manage, and **Continue** (add `instagram_manage_messages` too if they want DMs):
+  `instagram_basic`, `instagram_content_publish`, `instagram_manage_comments`,
+  `instagram_manage_insights`, `pages_show_list`, `pages_read_engagement`,
+  `business_management`
+- Copy the token (short-lived, ~1 hour — fine).
 
-3. **Exchange it for permanent keys.** Ask for their **App ID**, **App Secret**, and the
-   **short-lived token**. If you can run shell commands, do the exchange with `curl`
-   (otherwise give them the exact commands and have the command itself write the file in
-   step 4 — never ask them to paste tokens back into the chat):
-   - Long-lived user token:
-     `curl -sG "https://graph.facebook.com/v21.0/oauth/access_token" --data-urlencode "grant_type=fb_exchange_token" --data-urlencode "client_id=APP_ID" --data-urlencode "client_secret=APP_SECRET" --data-urlencode "fb_exchange_token=SHORT_TOKEN"`
-   - Pages + linked IG accounts + never-expiring Page tokens:
-     `curl -sG "https://graph.facebook.com/v21.0/me/accounts" --data-urlencode "fields=id,name,instagram_business_account{id,username},access_token" --data-urlencode "access_token=LONG_USER_TOKEN"`
-   - For each account, capture: the Page's `access_token` (permanent **token**),
-     `instagram_business_account.id` (the **user_id**), and the Page `id` (**fb_page_id**).
+## Step 2 — Exchange it for permanent keys
 
-4. **Save it.** Write/merge the account into `~/.instagram-mcp/accounts.json` (create the
-   folder/file if needed). It maps a short **alias** (agree on one — lowercase brand name,
-   no spaces) to the account. Merge with existing entries; never overwrite others:
-   ```json
-   {
-     "brand_a": {"user_id": "17841...", "token": "EAA...", "fb_page_id": "10x..."}
-   }
-   ```
-   `fb_page_id` is optional — include it whenever you have it so Facebook Page tools work.
+Ask for their **App ID**, **App Secret**, and the **short-lived token**. If you can run shell
+commands, do the exchange with `curl` (otherwise give them the exact commands and have the
+command itself write the file in Step 3 — never ask them to paste tokens back into the chat):
+- Long-lived user token:
+  `curl -sG "https://graph.facebook.com/v21.0/oauth/access_token" --data-urlencode "grant_type=fb_exchange_token" --data-urlencode "client_id=APP_ID" --data-urlencode "client_secret=APP_SECRET" --data-urlencode "fb_exchange_token=SHORT_TOKEN"`
+- Pages + linked IG accounts + never-expiring Page tokens:
+  `curl -sG "https://graph.facebook.com/v21.0/me/accounts" --data-urlencode "fields=id,name,instagram_business_account{id,username},access_token" --data-urlencode "access_token=LONG_USER_TOKEN"`
+- For each account, capture: the Page's `access_token` (permanent **token**),
+  `instagram_business_account.id` (the **user_id**), and the Page `id` (**fb_page_id**).
 
-5. **Confirm.** Run the `list_accounts` tool and show the user their connected accounts by
-   **username/alias only** — never tokens. If their account appears, it's connected.
+## Step 3 — Save it
 
-6. **Offer to add another.** The same short-lived token works for all their Pages for ~1
-   hour, so repeat from step 2 per account.
+Write/merge the account into `~/.instagram-mcp/accounts.json` (create the folder/file if
+needed). It maps a short **alias** (agree on one — lowercase brand name, no spaces) to the
+account. Merge with existing entries; never overwrite others:
+```json
+{
+  "brand_a": {"user_id": "17841...", "token": "EAA...", "fb_page_id": "10x..."}
+}
+```
+`fb_page_id` is optional — include it whenever you have it so Facebook Page tools work.
+
+## Step 4 — Confirm
+
+Run the `list_accounts` tool and show the user their connected accounts by
+**username/alias only** — never tokens. If their account appears, it's connected. Then offer
+to add another (the same short-lived token works for all their Pages for ~1 hour).
 
 ## Installing uv (one-time, if missing)
 
@@ -82,5 +94,5 @@ The server runs via `uv`. Offer whichever source the user trusts:
   conversation. Show usernames/aliases only.
 - If an account has no linked Instagram account, still save it with its `fb_page_id` — the
   Facebook Page tools will work for it.
-- After saving, the user may need to restart their Claude app (or reload the plugin) for
-  the server to pick up new accounts.
+- After saving, the user may need to restart their Claude app (or reload the plugin) for the
+  server to pick up new accounts.
