@@ -214,6 +214,33 @@ Prefer not to install `uv`? Every push auto-builds a self-contained `instagram-m
 attached to a GitHub Release. Download it and drag into **Claude Desktop → Settings →
 Extensions**, then paste your accounts JSON into the config panel (stored as sensitive).
 
+## Keeping it up to date
+
+> **Heads-up:** there's currently **no automatic "update available" notification** for
+> plugins — not in Claude Desktop or the CLI — and Claude Desktop has **no in-app Update
+> button** yet. You learn about updates from this repo's commits/Releases (watch or star it),
+> then pull them in manually. Your saved accounts (`~/.instagram-mcp/accounts.json`) are never
+> touched by updating.
+
+**Claude Desktop** (simplest today): **Settings → Directory → Plugins**, uninstall
+`instagram-social`, then install it again — it re-fetches the latest.
+
+**Claude Code (CLI):**
+
+```
+/plugin marketplace update instagram-social-marketplace
+/plugin update instagram-social
+```
+
+You can also turn on background auto-update: `/plugin` → **Marketplaces** → select this one →
+**Enable auto-update**. This plugin tracks the latest commit, so an update always brings the
+newest version.
+
+**Using the `.mcpb` instead?** Download the newest `instagram-mcp.mcpb` from
+[Releases](https://github.com/claudiachez/instagram-mcp/releases) and drag it into **Claude
+Desktop → Settings → Extensions** (it replaces the old one). The weekly watchdog also files a
+GitHub issue whenever Meta ships a new API version, so you're told when it actually matters.
+
 ## Notes & gotchas
 
 - **Publishing needs public HTTPS URLs** — Meta fetches media server-side.
