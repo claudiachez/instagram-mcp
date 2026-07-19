@@ -1,0 +1,11 @@
+{
+  "name": "instagram-social-marketplace",
+  "owner": { "name": "Fork of AleemHaider/instagram-mcp" },
+  "plugins": [
+    {
+      "name": "instagram-social",
+      "source": "./plugins/instagram-social",
+      "description": "Manage multiple Instagram + Facebook Page accounts from Claude — publish posts, reels, stories and carousels, handle comments, and pull insights. Includes a guided setup that walks you through connecting each account."
+    }
+  ]
+}

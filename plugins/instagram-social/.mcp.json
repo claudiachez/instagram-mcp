@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "instagram-social": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/claudiachez/instagram-mcp.git",
+        "instagram-mcp"
+      ]
+    }
+  }
+}

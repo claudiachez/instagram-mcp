@@ -89,7 +89,7 @@ Use the **Page's** `access_token` (never expires) and the
 ### 5. Configure `.env`
 
 ```bash
-IG_USER_ID=17841446575432302
+IG_USER_ID=17841000000000000
 IG_ACCESS_TOKEN=EAAxxxxxxxxxxxxxxxxxxx
 IG_GRAPH_VERSION=v21.0
 IG_GRAPH_HOST=graph.facebook.com
@@ -109,7 +109,7 @@ Edit `~/.config/Claude/claude_desktop_config.json` (Linux) or
     "instagram": {
       "command": "instagram-mcp",
       "env": {
-        "IG_USER_ID": "17841446575432302",
+        "IG_USER_ID": "17841000000000000",
         "IG_ACCESS_TOKEN": "EAAxxxxxxxxxxxxxxxxxxx"
       }
     }

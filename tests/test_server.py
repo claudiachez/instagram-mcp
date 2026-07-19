@@ -109,15 +109,15 @@ async def test_unknown_alias_error_lists_aliases_never_tokens(monkeypatch):
         "IG_ACCOUNTS",
         json.dumps(
             {
-                "edgeiq": {"user_id": "111", "token": "secret-a"},
-                "clientx": {"user_id": "222", "token": "secret-b"},
+                "brand_a": {"user_id": "111", "token": "secret-a"},
+                "brand_b": {"user_id": "222", "token": "secret-b"},
             }
         ),
     )
     with pytest.raises(RuntimeError) as exc:
         graph._config("nope")
     msg = str(exc.value)
-    assert "clientx" in msg and "edgeiq" in msg  # valid aliases surfaced
+    assert "brand_b" in msg and "brand_a" in msg  # valid aliases surfaced
     assert "secret-a" not in msg and "secret-b" not in msg  # tokens never leaked
 
     # Ambiguous default (no account, multiple configured) also errors clearly.
@@ -131,12 +131,12 @@ async def test_unknown_alias_error_lists_aliases_never_tokens(monkeypatch):
 async def test_fb_page_insights_happy_path(monkeypatch):
     monkeypatch.setenv(
         "IG_ACCOUNTS",
-        json.dumps({"edgeiq": {"user_id": "111", "token": "page-tok", "fb_page_id": "99001"}}),
+        json.dumps({"brand_a": {"user_id": "111", "token": "page-tok", "fb_page_id": "99001"}}),
     )
     route = respx.get(f"{BASE}/99001/insights").respond(
         200, json={"data": [{"name": "page_impressions", "values": [{"value": 5}]}]}
     )
-    result = await fb_page_insights("edgeiq", metrics="page_impressions", period="day")
+    result = await fb_page_insights("brand_a", metrics="page_impressions", period="day")
     assert result["data"][0]["name"] == "page_impressions"
     sent = dict(route.calls.last.request.url.params)
     assert sent["metric"] == "page_impressions"
@@ -146,10 +146,24 @@ async def test_fb_page_insights_happy_path(monkeypatch):
 async def test_fb_tool_requires_fb_page_id(monkeypatch):
     """An alias without fb_page_id errors clearly when an FB tool is used."""
     monkeypatch.setenv(
-        "IG_ACCOUNTS", json.dumps({"edgeiq": {"user_id": "111", "token": "t"}})
+        "IG_ACCOUNTS", json.dumps({"brand_a": {"user_id": "111", "token": "t"}})
     )
     with pytest.raises(RuntimeError, match="fb_page_id"):
-        await fb_list_posts("edgeiq")
+        await fb_list_posts("brand_a")
+
+
+def test_accounts_from_config_file(monkeypatch, tmp_path):
+    """With no IG_ACCOUNTS env var, accounts load from the JSON file the guided
+    setup writes (path via IG_ACCOUNTS_FILE, else ~/.instagram-mcp/accounts.json)."""
+    monkeypatch.delenv("IG_ACCOUNTS", raising=False)
+    monkeypatch.delenv("IG_USER_ID", raising=False)
+    monkeypatch.delenv("IG_ACCESS_TOKEN", raising=False)
+    cfg = tmp_path / "accounts.json"
+    cfg.write_text(json.dumps({"brand_a": {"user_id": "1", "token": "t", "fb_page_id": "9"}}))
+    monkeypatch.setenv("IG_ACCOUNTS_FILE", str(cfg))
+    assert graph.account_aliases() == ["brand_a"]
+    assert graph.ig_user_id("brand_a") == "1"
+    assert graph.fb_page_id("brand_a") == "9"
 
 
 def test_missing_token_raises():

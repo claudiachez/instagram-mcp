@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import pathlib
 from typing import Any
 
 import httpx
@@ -40,11 +41,23 @@ def _http() -> httpx.AsyncClient:
 def _accounts() -> dict[str, dict[str, Any]]:
     """The configured account registry as a map of alias -> account config.
 
-    Uses IG_ACCOUNTS (a JSON object mapping alias -> {user_id, token, fb_page_id?,
-    graph_version?, host?}) when set. Otherwise, for backward compatibility, if
-    IG_USER_ID + IG_ACCESS_TOKEN are set it synthesizes a single account "default".
+    Resolution order:
+      1. IG_ACCOUNTS env var (a JSON object mapping alias -> {user_id, token,
+         fb_page_id?, graph_version?, host?}).
+      2. A JSON file at IG_ACCOUNTS_FILE, or ~/.instagram-mcp/accounts.json by
+         default (written by the guided setup).
+      3. Backward compatibility: IG_USER_ID + IG_ACCESS_TOKEN -> single "default".
     """
     raw = os.environ.get("IG_ACCOUNTS")
+    if not raw:
+        cfg_path = os.environ.get("IG_ACCOUNTS_FILE")
+        cfg = (
+            pathlib.Path(cfg_path)
+            if cfg_path
+            else pathlib.Path.home() / ".instagram-mcp" / "accounts.json"
+        )
+        if cfg.is_file():
+            raw = cfg.read_text()
     if raw:
         try:
             data = json.loads(raw)

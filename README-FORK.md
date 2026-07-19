@@ -1,4 +1,4 @@
-# Instagram MCP — Edge IQ Fork Setup
+# Instagram MCP — Multi-Account Fork Setup
 
 Fork of `AleemHaider/instagram-mcp` (audited at v0.1.1, byte-identical PyPI↔GitHub)
 with automated Graph API version management.
@@ -65,8 +65,8 @@ gh secret set IG_ACCOUNTS
 ```
 
 Paste the accounts JSON when prompted, e.g.
-`{"edgeiq": {"user_id": "17841...", "token": "EAA...", "fb_page_id": "10x..."}}`
-The watchdog smoke-tests EVERY account weekly, so a dead client token
+`{"brand_a": {"user_id": "17841...", "token": "EAA...", "fb_page_id": "10x..."}}`
+The watchdog smoke-tests EVERY account weekly, so a dead account token
 surfaces as a Monday issue, not a failed campaign.
 
 Trigger the first build:
