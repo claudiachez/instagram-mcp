@@ -1,0 +1,56 @@
+name: Build .mcpb release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "mcpb/manifest.json"
+      - "pyproject.toml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install mcpb CLI
+        run: npm install -g @anthropic-ai/mcpb
+
+      - name: Assemble bundle
+        run: |
+          mkdir -p bundle/server/lib
+          # Install THIS fork's source (not PyPI) + runtime deps, pure-python wheels only
+          pip install . --target bundle/server/lib --only-binary :all: || pip install . --target bundle/server/lib
+          # Sync manifest default version with the code default
+          VERSION=$(grep -oP '"IG_GRAPH_VERSION", "\Kv[0-9]+\.0' src/instagram_mcp/graph.py)
+          python3 - "$VERSION" << 'EOF'
+          import json, sys
+          m = json.load(open("mcpb/manifest.json"))
+          m["user_config"]["ig_graph_version"]["default"] = sys.argv[1]
+          json.dump(m, open("bundle/manifest.json", "w"), indent=2)
+          EOF
+
+      - name: Pack
+        run: mcpb pack bundle instagram-mcp.mcpb
+
+      - name: Publish release with .mcpb attached
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="build-$(date +%Y%m%d-%H%M)"
+          gh release create "$TAG" instagram-mcp.mcpb \
+            --title "Instagram MCP $TAG" \
+            --notes "Drag instagram-mcp.mcpb into Claude Desktop → Settings → Extensions to update. Default Graph API version: $(grep -oP '\"IG_GRAPH_VERSION\", \"\Kv[0-9]+\.0' src/instagram_mcp/graph.py)"

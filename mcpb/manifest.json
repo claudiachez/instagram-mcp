@@ -1,0 +1,42 @@
+{
+  "manifest_version": "0.2",
+  "name": "instagram-mcp",
+  "display_name": "Instagram Manager",
+  "version": "1.0.0",
+  "description": "Instagram + Facebook Pages via Graph API: publish, comments, DMs, hashtag search, insights. Multi-account Edge IQ fork with version watchdog.",
+  "author": {
+    "name": "Edge IQ fork of AleemHaider/instagram-mcp"
+  },
+  "server": {
+    "type": "python",
+    "entry_point": "server/lib/instagram_mcp/__main__.py",
+    "mcp_config": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "instagram_mcp"
+      ],
+      "env": {
+        "PYTHONPATH": "${__dirname}/server/lib",
+        "IG_ACCOUNTS": "${user_config.ig_accounts}",
+        "IG_GRAPH_VERSION": "${user_config.ig_graph_version}"
+      }
+    }
+  },
+  "user_config": {
+    "ig_accounts": {
+      "type": "string",
+      "title": "Accounts JSON",
+      "description": "Map of alias -> {user_id, token, fb_page_id?}. Example: {\"edgeiq\": {\"user_id\": \"17841...\", \"token\": \"EAA...\", \"fb_page_id\": \"10x...\"}}",
+      "sensitive": true,
+      "required": true
+    },
+    "ig_graph_version": {
+      "type": "string",
+      "title": "Graph API Version",
+      "description": "Override without rebuilding if the default version sunsets (e.g. v22.0)",
+      "default": "v21.0",
+      "required": false
+    }
+  }
+}
