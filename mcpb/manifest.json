@@ -27,9 +27,9 @@
     "ig_accounts": {
       "type": "string",
       "title": "Accounts JSON",
-      "description": "Map of alias -> {user_id, token, fb_page_id?}. Example: {\"brand_a\": {\"user_id\": \"17841...\", \"token\": \"EAA...\", \"fb_page_id\": \"10x...\"}}",
+      "description": "Optional. Map of alias -> {user_id, token, fb_page_id?}, e.g. {\"brand_a\": {\"user_id\": \"17841...\", \"token\": \"EAA...\", \"fb_page_id\": \"10x...\"}}. Leave blank to use ~/.instagram-mcp/accounts.json created by the setup helper.",
       "sensitive": true,
-      "required": true
+      "required": false
     },
     "ig_graph_version": {
       "type": "string",
