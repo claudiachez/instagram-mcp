@@ -9,11 +9,21 @@ from __future__ import annotations
 import getpass
 import json
 import pathlib
+import re
 import sys
+import unicodedata
 import urllib.parse
 import urllib.request
 
 GRAPH = "https://graph.facebook.com/v21.0"
+
+
+def _slug(name: str) -> str:
+    """A safe alias from a name: transliterate accents (Á -> a), keep [a-z0-9_]."""
+    decomposed = unicodedata.normalize("NFKD", name)
+    ascii_name = "".join(c for c in decomposed if not unicodedata.combining(c))
+    slug = re.sub(r"[^a-z0-9]+", "_", ascii_name.lower()).strip("_")
+    return slug or "account"
 
 
 def _api(path: str, **params: str) -> dict:
@@ -105,7 +115,7 @@ def main() -> None:
     env_path.write_text(contents)
     print(f"      wrote {env_path.resolve()}")
 
-    alias = ig_username.replace(".", "_")
+    alias = _slug(ig_username)
     print("\nFor a multi-account setup, add this entry to IG_ACCOUNTS:")
     print(
         json.dumps(

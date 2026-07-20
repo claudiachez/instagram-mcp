@@ -38,6 +38,15 @@ def _http() -> httpx.AsyncClient:
     return _client
 
 
+def _accounts_file_path() -> pathlib.Path:
+    """Where account JSON is read from when IG_ACCOUNTS env is unset:
+    IG_ACCOUNTS_FILE if set, else ~/.instagram-mcp/accounts.json."""
+    override = os.environ.get("IG_ACCOUNTS_FILE")
+    if override:
+        return pathlib.Path(override)
+    return pathlib.Path.home() / ".instagram-mcp" / "accounts.json"
+
+
 def _accounts() -> dict[str, dict[str, Any]]:
     """The configured account registry as a map of alias -> account config.
 
@@ -50,12 +59,7 @@ def _accounts() -> dict[str, dict[str, Any]]:
     """
     raw = os.environ.get("IG_ACCOUNTS")
     if not raw:
-        cfg_path = os.environ.get("IG_ACCOUNTS_FILE")
-        cfg = (
-            pathlib.Path(cfg_path)
-            if cfg_path
-            else pathlib.Path.home() / ".instagram-mcp" / "accounts.json"
-        )
+        cfg = _accounts_file_path()
         if cfg.is_file():
             raw = cfg.read_text()
     if raw:
@@ -79,7 +83,10 @@ def _resolve(account: str | None) -> tuple[str, dict[str, Any]]:
     accounts = _accounts()
     if not accounts:
         raise RuntimeError(
-            "No accounts configured: set IG_ACCOUNTS (JSON) or IG_USER_ID + IG_ACCESS_TOKEN"
+            "No accounts configured. Provide IG_ACCOUNTS (JSON) in the server's environment, "
+            f"or save accounts to {_accounts_file_path()}. If this server is running remotely "
+            "(a cloud sandbox), it cannot see files on your computer — install and run it "
+            "locally, or inject IG_ACCOUNTS into its environment. Call health_check for details."
         )
     if account is None:
         if len(accounts) == 1:
@@ -145,6 +152,38 @@ def account_info(account: str) -> dict[str, Any]:
     """Non-secret metadata for an alias: user_id and fb_page_id only (never token)."""
     alias, acct = _resolve(account)
     return {"alias": alias, "user_id": acct.get("user_id"), "fb_page_id": acct.get("fb_page_id")}
+
+
+def diagnostics() -> dict[str, Any]:
+    """Non-secret runtime diagnostics for troubleshooting scope/sandbox/path issues.
+    Reports where the server is running and whether it can find accounts — never tokens."""
+    path = _accounts_file_path()
+    info: dict[str, Any] = {
+        "home": str(pathlib.Path.home()),
+        "accounts_file_path": str(path),
+        "accounts_file_exists": path.is_file(),
+        "ig_accounts_env_set": bool(os.environ.get("IG_ACCOUNTS")),
+        "ig_accounts_file_env": os.environ.get("IG_ACCOUNTS_FILE"),
+        "graph_host": os.environ.get("IG_GRAPH_HOST", "graph.facebook.com"),
+        "graph_version": os.environ.get("IG_GRAPH_VERSION", "v21.0"),
+    }
+    try:
+        accts = _accounts()
+        info["account_count"] = len(accts)
+        info["aliases"] = sorted(accts.keys())
+        if os.environ.get("IG_ACCOUNTS"):
+            info["account_source"] = "env:IG_ACCOUNTS"
+        elif path.is_file():
+            info["account_source"] = f"file:{path}"
+        elif os.environ.get("IG_USER_ID") and os.environ.get("IG_ACCESS_TOKEN"):
+            info["account_source"] = "legacy:IG_USER_ID+IG_ACCESS_TOKEN"
+        else:
+            info["account_source"] = "none"
+    except Exception as e:  # diagnostics must never raise
+        info["account_count"] = 0
+        info["aliases"] = []
+        info["account_source"] = f"error: {type(e).__name__}: {e}"
+    return info
 
 
 async def get(path: str, *, account: str | None = None, **params: Any) -> Any:

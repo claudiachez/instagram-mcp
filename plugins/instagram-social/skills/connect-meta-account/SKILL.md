@@ -52,9 +52,13 @@ Ask them to:
 
 ## Step 2 — Exchange it for permanent keys
 
-Ask for their **App ID**, **App Secret**, and the **short-lived token**. If you can run shell
-commands, do the exchange with `curl` (otherwise give them the exact commands and have the
-command itself write the file in Step 3 — never ask them to paste tokens back into the chat):
+Collect the **App ID**, **App Secret**, and **short-lived token** by **asking in chat**, then
+substitute them directly into the `curl` commands below. Do **NOT** use interactive shell
+prompts like `read -p "..."` — that fails on zsh (the macOS default) with `read: -p: no
+coprocess`, silently leaving variables empty. If you must read from the shell, use `read -r VAR`
+(and `read -rs VAR` for secrets). If you can run shell commands, do the exchange with `curl`
+(otherwise give them the exact commands and have the command itself write the file in Step 3 —
+never ask them to paste tokens back into the chat):
 - Long-lived user token:
   `curl -sG "https://graph.facebook.com/v21.0/oauth/access_token" --data-urlencode "grant_type=fb_exchange_token" --data-urlencode "client_id=APP_ID" --data-urlencode "client_secret=APP_SECRET" --data-urlencode "fb_exchange_token=SHORT_TOKEN"`
 - Pages + linked IG accounts + never-expiring Page tokens:
@@ -65,8 +69,10 @@ command itself write the file in Step 3 — never ask them to paste tokens back 
 ## Step 3 — Save it
 
 Write/merge the account into `~/.instagram-mcp/accounts.json` (create the folder/file if
-needed). It maps a short **alias** (agree on one — lowercase brand name, no spaces) to the
-account. Merge with existing entries; never overwrite others:
+needed). It maps a short **alias** to the account. Build the alias by **transliterating accents
+to ASCII** (Á→a, ñ→n), lowercasing, and replacing runs of non-alphanumeric characters with `_`
+— e.g. "Ágora Dominicana" → `agora_dominicana`. Do **NOT** just delete non-ASCII characters
+(that turns "Ágora" into "gora"). Merge with existing entries; never overwrite others:
 ```json
 {
   "brand_a": {"user_id": "17841...", "token": "EAA...", "fb_page_id": "10x..."}
@@ -76,9 +82,17 @@ account. Merge with existing entries; never overwrite others:
 
 ## Step 4 — Confirm
 
-Run the `list_accounts` tool and show the user their connected accounts by
-**username/alias only** — never tokens. If their account appears, it's connected. Then offer
-to add another (the same short-lived token works for all their Pages for ~1 hour).
+Call the `list_accounts` MCP tool and show the user their connected accounts by
+**username/alias only** — never tokens. If their account appears, it's connected. Then offer to
+add another (the same short-lived token works for all their Pages for ~1 hour).
+
+**Critical — how to verify, and how NOT to:** confirmation MUST come from calling the
+`list_accounts` (or `health_check`) MCP tool. If those `instagram-social` tools are **not** in
+your available tools, tell the user plainly: *"the plugin's server isn't loaded in this
+session"* — suggest they run `health_check`, and check that the plugin is installed **locally**,
+not only from the remote Directory (a remote/cloud install can't read files on their computer).
+Do **NOT** inspect the filesystem yourself to "verify" the accounts file — your sandbox is not
+the user's machine, so any `ls`/`cat` you run there is meaningless and will mislead everyone.
 
 ## Installing uv (one-time, if missing)
 

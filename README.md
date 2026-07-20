@@ -241,6 +241,49 @@ newest version.
 Desktop → Settings → Extensions** (it replaces the old one). The weekly watchdog also files a
 GitHub issue whenever Meta ships a new API version, so you're told when it actually matters.
 
+## Troubleshooting
+
+**Install from ONE place.** Installing from both the Code settings *and* the chat/Directory
+creates two registrations of the plugin in different scopes, and the app silently prefers the
+**remote** one — which runs in a cloud sandbox that **cannot see files on your Mac**. That makes
+the tools "disappear" or report "no accounts" even after you've connected them. Pick a single
+local install source.
+
+**Tools missing / "no accounts configured" after connecting accounts.** Ask Claude to run the
+**`health_check`** tool — it reports where the server is actually running:
+
+- If `home` is a Linux path (e.g. `/root`) instead of `/Users/you`, the server is running
+  **remotely** — uninstall the remote/Directory copy and keep only a local install.
+- If `accounts_file_exists` is `false` but the file really exists on your Mac, that's the same
+  remote-sandbox cause.
+- `account_source` and `account_count` tell you whether it loaded from env, the file, or nothing.
+
+**Do not let a chat session "check the filesystem" to verify.** If the `instagram-social` tools
+aren't loaded, the right answer is "the server isn't running in this session" — not an `ls` of a
+sandbox that isn't your computer. Use `health_check` / `list_accounts` as the source of truth.
+
+**Manual checks (Terminal):**
+
+```bash
+grep -o '"instagram[^"]*"' ~/.claude/plugins/installed_plugins.json   # is a LOCAL install present?
+ls ~/Library/Logs/Claude/ | grep -i instagram                        # did the server ever spawn?
+grep "exists in both" ~/Library/Logs/Claude/main.log                 # scope collision logged?
+```
+
+**"uvx not found" on launch.** Dock-launched apps get a minimal PATH that omits Homebrew. The
+bundled launcher (`scripts/run-server.sh`) resolves `uvx` from `~/.local/bin`, `/opt/homebrew/bin`,
+and `/usr/local/bin`; if it still fails, `brew install uv` (or `pip3 install uv`) and restart.
+
+**First launch is slow or times out once.** The server installs itself from GitHub on first run
+(cold start, can take ~30–60s). Wait it out; later launches are cached. To pre-warm the cache
+manually, run once in Terminal and Ctrl-C after a few seconds:
+
+```bash
+uvx --from git+https://github.com/claudiachez/instagram-mcp.git instagram-mcp < /dev/null
+```
+
+(Because this build tracks the latest commit, each new push re-triggers a one-time cold start.)
+
 ## Notes & gotchas
 
 - **Publishing needs public HTTPS URLs** — Meta fetches media server-side.

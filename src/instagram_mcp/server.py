@@ -3,6 +3,9 @@ from __future__ import annotations
 import asyncio
 import functools
 import json
+import os
+import platform
+import sys
 from collections.abc import Awaitable, Callable
 from typing import Any, TypeVar
 
@@ -71,6 +74,24 @@ async def list_accounts() -> dict[str, Any]:
                 entry["username_error"] = e.to_dict()["message"]
         accounts.append(entry)
     return {"accounts": accounts}
+
+
+@tool
+async def health_check() -> dict[str, Any]:
+    """Diagnostics for when tools seem missing or 'no accounts' errors appear. Reports where
+    THIS server process runs (home dir, platform, cwd) and whether it can see your accounts
+    config (path, exists, count, aliases). Never returns tokens. If `home` looks like a Linux
+    sandbox rather than your computer, the plugin is running remotely and cannot read your
+    local accounts file — reinstall it as a local plugin."""
+    info = graph.diagnostics()
+    info.update(
+        {
+            "python": sys.version.split()[0],
+            "platform": platform.platform(),
+            "cwd": os.getcwd(),
+        }
+    )
+    return info
 
 
 # ---------- Profile & media ----------

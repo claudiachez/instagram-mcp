@@ -10,6 +10,7 @@ from instagram_mcp.server import (
     get_account_insights,
     get_media,
     get_my_profile,
+    health_check,
     mcp,
     publish_story,
 )
@@ -30,8 +31,8 @@ async def test_all_tools_registered():
         "list_conversations", "get_conversation", "send_dm",
         "get_account_insights", "get_media_insights",
         # multi-account + Facebook additions
-        "list_accounts", "fb_publish_post", "fb_publish_video", "fb_list_posts",
-        "fb_list_comments", "fb_reply_to_comment", "fb_hide_comment",
+        "list_accounts", "health_check", "fb_publish_post", "fb_publish_video",
+        "fb_list_posts", "fb_list_comments", "fb_reply_to_comment", "fb_hide_comment",
         "fb_delete_comment", "fb_page_insights",
     }
     assert expected.issubset(names), expected - names
@@ -166,10 +167,45 @@ def test_accounts_from_config_file(monkeypatch, tmp_path):
     assert graph.fb_page_id("brand_a") == "9"
 
 
+async def test_health_check_reports_state_without_tokens(monkeypatch, tmp_path):
+    cfg = tmp_path / "accounts.json"
+    cfg.write_text(
+        json.dumps({"brand_a": {"user_id": "1", "token": "secret-tok", "fb_page_id": "9"}})
+    )
+    monkeypatch.delenv("IG_ACCOUNTS", raising=False)
+    monkeypatch.setenv("IG_ACCOUNTS_FILE", str(cfg))
+    res = await health_check()
+    assert res["account_count"] == 1
+    assert res["aliases"] == ["brand_a"]
+    assert res["accounts_file_exists"] is True
+    assert res["account_source"].startswith("file:")
+    assert "python" in res and "home" in res and "platform" in res
+    assert "secret-tok" not in json.dumps(res)  # diagnostics never leak tokens
+
+
+async def test_health_check_survives_no_accounts(monkeypatch, tmp_path):
+    monkeypatch.delenv("IG_ACCOUNTS", raising=False)
+    monkeypatch.delenv("IG_USER_ID", raising=False)
+    monkeypatch.delenv("IG_ACCESS_TOKEN", raising=False)
+    monkeypatch.setenv("IG_ACCOUNTS_FILE", str(tmp_path / "missing.json"))
+    res = await health_check()  # must not raise
+    assert res["account_count"] == 0
+    assert res["accounts_file_exists"] is False
+    assert res["account_source"] == "none"
+
+
+def test_get_token_slug_transliterates():
+    from instagram_mcp.scripts.get_token import _slug
+    assert _slug("Ágora Dominicana") == "agora_dominicana"
+    assert _slug("withjoy.dr") == "withjoy_dr"
+    assert _slug("ñoño") == "nono"
+    assert _slug("!!!") == "account"
+
+
 def test_missing_token_raises():
     import importlib
     import os
     os.environ.pop("IG_ACCESS_TOKEN", None)
     importlib.reload(graph)
-    with pytest.raises(RuntimeError, match="IG_ACCESS_TOKEN"):
+    with pytest.raises(RuntimeError, match="No accounts configured"):
         graph._config()
