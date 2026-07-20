@@ -246,6 +246,17 @@ def test_rebuild_build_accounts():
     assert len(acc) == 2  # page without an access_token is skipped
 
 
+def test_blank_or_placeholder_ig_accounts_falls_back_to_file(monkeypatch, tmp_path):
+    """A blank field or an unsubstituted ${...} placeholder from the .mcpb config must
+    fall back to the accounts file, not error."""
+    cfg = tmp_path / "accounts.json"
+    cfg.write_text(json.dumps({"brand_a": {"user_id": "1", "token": "t"}}))
+    monkeypatch.setenv("IG_ACCOUNTS_FILE", str(cfg))
+    for bad in ("", "   ", "${user_config.ig_accounts}"):
+        monkeypatch.setenv("IG_ACCOUNTS", bad)
+        assert graph.account_aliases() == ["brand_a"], f"failed for {bad!r}"
+
+
 def test_missing_token_raises():
     import importlib
     import os

@@ -65,6 +65,13 @@ def _accounts() -> dict[str, dict[str, Any]]:
       3. Backward compatibility: IG_USER_ID + IG_ACCESS_TOKEN -> single "default".
     """
     raw = os.environ.get("IG_ACCOUNTS")
+    if raw is not None:
+        raw = raw.strip()
+        # A blank field, or an unsubstituted "${...}" placeholder passed by the .mcpb
+        # extension config, must behave as "unset" so we fall back to the accounts file
+        # instead of trying (and failing) to parse it as JSON.
+        if not raw or raw.startswith("$"):
+            raw = None
     if not raw:
         cfg = _accounts_file_path()
         if cfg.is_file():
