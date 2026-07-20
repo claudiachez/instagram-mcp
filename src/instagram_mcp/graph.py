@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import pathlib
 from typing import Any
 
 import httpx
+
+# Access tokens are passed as the `access_token` query param, and httpx logs the full
+# request URL at INFO level — which would write tokens into the MCP server's log file.
+# Keep those loggers at WARNING so credentials never hit disk.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
 class GraphError(RuntimeError):

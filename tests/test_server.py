@@ -194,6 +194,14 @@ async def test_health_check_survives_no_accounts(monkeypatch, tmp_path):
     assert res["account_source"] == "none"
 
 
+def test_httpx_logging_suppressed_so_tokens_dont_hit_logs():
+    import logging
+    # graph sets these at import time; INFO-level httpx logs echo the URL (with the
+    # access_token query param), so they must be raised to WARNING.
+    assert logging.getLogger("httpx").level >= logging.WARNING
+    assert logging.getLogger("httpcore").level >= logging.WARNING
+
+
 def test_get_token_slug_transliterates():
     from instagram_mcp.scripts.get_token import _slug
     assert _slug("Ágora Dominicana") == "agora_dominicana"
