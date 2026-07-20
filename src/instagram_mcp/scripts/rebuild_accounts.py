@@ -14,8 +14,8 @@ import getpass
 import json
 import pathlib
 import sys
-import urllib.parse
-import urllib.request
+
+import httpx
 
 from .get_token import _slug
 
@@ -23,9 +23,9 @@ GRAPH = "https://graph.facebook.com/v21.0"
 
 
 def _api(path: str, **params: str) -> dict:
-    url = f"{GRAPH}/{path.lstrip('/')}?" + urllib.parse.urlencode(params)
-    with urllib.request.urlopen(url) as r:
-        body = json.loads(r.read())
+    # httpx bundles CA certs (certifi); plain urllib fails TLS on python.org Python.
+    r = httpx.get(f"{GRAPH}/{path.lstrip('/')}", params=params, timeout=30.0)
+    body = r.json()
     if "error" in body:
         raise SystemExit(f"Graph API error: {body['error']}")
     return body
@@ -96,8 +96,7 @@ def main() -> None:
     pages.extend(data.get("data", []))
     nxt = data.get("paging", {}).get("next")
     while nxt:
-        with urllib.request.urlopen(nxt) as r:
-            page = json.loads(r.read())
+        page = httpx.get(nxt, timeout=30.0).json()
         pages.extend(page.get("data", []))
         nxt = page.get("paging", {}).get("next")
 

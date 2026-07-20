@@ -12,8 +12,8 @@ import pathlib
 import re
 import sys
 import unicodedata
-import urllib.parse
-import urllib.request
+
+import httpx
 
 GRAPH = "https://graph.facebook.com/v21.0"
 
@@ -27,9 +27,9 @@ def _slug(name: str) -> str:
 
 
 def _api(path: str, **params: str) -> dict:
-    url = f"{GRAPH}/{path.lstrip('/')}?" + urllib.parse.urlencode(params)
-    with urllib.request.urlopen(url) as r:
-        body = json.loads(r.read())
+    # httpx bundles CA certs (certifi); plain urllib fails TLS on python.org Python.
+    r = httpx.get(f"{GRAPH}/{path.lstrip('/')}", params=params, timeout=30.0)
+    body = r.json()
     if "error" in body:
         raise SystemExit(f"Graph API error: {body['error']}")
     return body
