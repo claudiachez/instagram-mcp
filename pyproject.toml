@@ -46,6 +46,7 @@ Changelog = "https://github.com/claudiachez/instagram-mcp/blob/main/CHANGELOG.md
 [project.scripts]
 instagram-mcp = "instagram_mcp.__main__:main"
 instagram-mcp-get-token = "instagram_mcp.scripts.get_token:main"
+instagram-mcp-rebuild-accounts = "instagram_mcp.scripts.rebuild_accounts:main"
 
 [build-system]
 requires = ["hatchling"]

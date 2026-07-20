@@ -228,6 +228,24 @@ def test_get_token_slug_transliterates():
     assert _slug("!!!") == "account"
 
 
+def test_rebuild_build_accounts():
+    from instagram_mcp.scripts.rebuild_accounts import _build_accounts
+    pages = [
+        {"id": "1", "name": "Ágora Dominicana", "access_token": "t1"},  # FB-only
+        {
+            "id": "2",
+            "name": "Joy",
+            "instagram_business_account": {"id": "99", "username": "withjoy.dr"},
+            "access_token": "t2",
+        },
+        {"id": "3", "name": "No Admin"},  # no token -> skipped
+    ]
+    acc = _build_accounts(pages)
+    assert acc["agora_dominicana"] == {"token": "t1", "fb_page_id": "1"}
+    assert acc["withjoy_dr"] == {"user_id": "99", "token": "t2", "fb_page_id": "2"}
+    assert len(acc) == 2  # page without an access_token is skipped
+
+
 def test_missing_token_raises():
     import importlib
     import os
