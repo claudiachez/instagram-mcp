@@ -171,8 +171,10 @@ def diagnostics() -> dict[str, Any]:
         "accounts_file_exists": path.is_file(),
         "ig_accounts_env_set": bool(os.environ.get("IG_ACCOUNTS")),
         "ig_accounts_file_env": os.environ.get("IG_ACCOUNTS_FILE"),
-        "graph_host": os.environ.get("IG_GRAPH_HOST", "graph.facebook.com"),
-        "graph_version": os.environ.get("IG_GRAPH_VERSION", "v21.0"),
+        # NB: use `or` (not the 2-arg default) so the release workflow's version grep
+        # `"IG_GRAPH_VERSION", "vN.0"` matches ONLY the canonical default in _config().
+        "graph_host": os.environ.get("IG_GRAPH_HOST") or "graph.facebook.com",
+        "graph_version": os.environ.get("IG_GRAPH_VERSION") or "v21.0",
     }
     try:
         accts = _accounts()

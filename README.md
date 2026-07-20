@@ -295,6 +295,30 @@ uvx --from git+https://github.com/claudiachez/instagram-mcp.git instagram-mcp < 
 - **Errors return a structured dict** (`error: true` with `status`, `message`, `code`,
   `subcode`, `fbtrace_id`) — the Graph API error, not a Python traceback.
 
+## Privacy & data handling
+
+- **No telemetry.** This server sends **no analytics or usage data** to the author or any third
+  party. There is nothing to opt out of.
+- **What it reads:** your account credentials from `~/.instagram-mcp/accounts.json` (or the
+  `IG_ACCOUNTS` environment variable) on your own machine.
+- **What it sends, and to whom:** only the requests you trigger, sent **directly to Meta's
+  Graph API over HTTPS** (`graph.facebook.com`) using your token. No other network destinations.
+- **What it writes:** the publishing/comment tools change your own Instagram/Facebook content
+  when you ask them to; the setup helper writes tokens to `~/.instagram-mcp/accounts.json`.
+- **Where tokens live:** only in that local file (and, if you enable the version watchdog, the
+  GitHub Actions secret you control). Tokens are never committed, never printed in tool output,
+  and kept out of logs (the HTTP client's request logging is suppressed).
+
+## What it touches, and how to remove it
+
+- **Files:** reads/writes only `~/.instagram-mcp/accounts.json` (override path via
+  `IG_ACCOUNTS_FILE`). Nothing else on disk.
+- **Network:** outbound HTTPS to `graph.facebook.com` only. **No listening ports** — it's a
+  local stdio process, not a server you expose.
+- **Uninstall:** remove the plugin (Settings → Directory → Plugins → uninstall), then delete
+  your credentials with `rm ~/.instagram-mcp/accounts.json`. Optionally `uv cache clean` and
+  remove the GitHub `IG_ACCOUNTS` secret if you created one.
+
 ## Development
 
 ```bash
