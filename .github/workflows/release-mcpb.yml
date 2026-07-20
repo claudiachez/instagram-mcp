@@ -50,7 +50,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="build-$(date +%Y%m%d-%H%M)"
-          gh release create "$TAG" instagram-mcp.mcpb \
-            --title "Instagram MCP $TAG" \
-            --notes "Drag instagram-mcp.mcpb into Claude Desktop → Settings → Extensions to update. Default Graph API version: $(grep -oP '\"IG_GRAPH_VERSION\", \"\Kv[0-9]+\.0' src/instagram_mcp/graph.py)"
+          # Seconds in the tag avoid collisions when the workflow is re-run within a minute.
+          TAG="build-$(date +%Y%m%d-%H%M%S)"
+          VERSION="$(grep -oP '"IG_GRAPH_VERSION", "\Kv[0-9]+\.0' src/instagram_mcp/graph.py | head -1)"
+          NOTES="Drag instagram-mcp.mcpb into Claude Desktop → Settings → Extensions to update. Default Graph API version: ${VERSION}"
+          # Retry: gh release create hits the GitHub API, which can 503 during incidents.
+          for attempt in 1 2 3 4 5; do
+            if gh release create "$TAG" instagram-mcp.mcpb --title "Instagram MCP $TAG" --notes "$NOTES"; then
+              echo "released $TAG"; exit 0
+            fi
+            echo "release attempt $attempt failed (transient GitHub API?); retrying in 30s…"
+            sleep 30
+          done
+          echo "::error::gh release create failed after 5 attempts — likely a GitHub API incident, re-run later"
+          exit 1
