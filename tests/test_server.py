@@ -194,6 +194,24 @@ async def test_health_check_survives_no_accounts(monkeypatch, tmp_path):
     assert res["account_source"] == "none"
 
 
+@respx.mock
+async def test_token_redacted_from_paging_urls():
+    """Graph echoes the access_token inside paging next/previous URLs; those must be
+    redacted before the response leaves a tool."""
+    from instagram_mcp.server import list_comments
+    respx.get(f"{BASE}/123/comments").respond(
+        200,
+        json={
+            "data": [{"id": "1", "text": "hi"}],
+            "paging": {"next": f"{BASE}/123/comments?access_token=test-token&after=X"},
+        },
+    )
+    res = await list_comments(media_id="123")
+    blob = json.dumps(res)
+    assert "test-token" not in blob  # token never leaves in the response
+    assert "REDACTED" in blob
+
+
 def test_httpx_logging_suppressed_so_tokens_dont_hit_logs():
     import logging
     # graph sets these at import time; INFO-level httpx logs echo the URL (with the

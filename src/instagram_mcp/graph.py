@@ -195,12 +195,27 @@ def diagnostics() -> dict[str, Any]:
     return info
 
 
+def _redact(obj: Any, token: str) -> Any:
+    """Strip the access token out of any string in a response. The Graph API echoes
+    the token back inside `paging` next/previous URLs, so without this it would reach
+    tool output, the model, and any transcript. Keeps credentials out of responses."""
+    if not token:
+        return obj
+    if isinstance(obj, str):
+        return obj.replace(token, "REDACTED")
+    if isinstance(obj, list):
+        return [_redact(v, token) for v in obj]
+    if isinstance(obj, dict):
+        return {k: _redact(v, token) for k, v in obj.items()}
+    return obj
+
+
 async def get(path: str, *, account: str | None = None, **params: Any) -> Any:
     base, token = _config(account)
     q = _clean(params)
     q["access_token"] = token
     r = await _http().get(f"{base}/{path.lstrip('/')}", params=q)
-    return _unwrap(r)
+    return _redact(_unwrap(r), token)
 
 
 async def post(path: str, *, account: str | None = None, **fields: Any) -> Any:
@@ -210,7 +225,7 @@ async def post(path: str, *, account: str | None = None, **fields: Any) -> Any:
         params={"access_token": token},
         data=_clean(fields),
     )
-    return _unwrap(r)
+    return _redact(_unwrap(r), token)
 
 
 async def delete(path: str, *, account: str | None = None, **params: Any) -> Any:
@@ -218,27 +233,32 @@ async def delete(path: str, *, account: str | None = None, **params: Any) -> Any
     q = _clean(params)
     q["access_token"] = token
     r = await _http().delete(f"{base}/{path.lstrip('/')}", params=q)
-    return _unwrap(r)
+    return _redact(_unwrap(r), token)
 
 
 async def paginate(
     path: str, *, account: str | None = None, max_pages: int = 5, **params: Any
 ) -> dict[str, Any]:
     """Follow paging.next up to max_pages and concatenate the `data` arrays."""
+    # Fetch raw (not via get()) so we can follow the tokenized paging.next URL
+    # internally; the returned payload omits paging URLs and is redacted anyway.
+    base, token = _config(account)
     results: list[Any] = []
     pages = 0
     next_url: str | None = None
 
     while pages < max_pages:
         if next_url is None:
-            res = await get(path, account=account, **params)
+            q = _clean(params)
+            q["access_token"] = token
+            r = await _http().get(f"{base}/{path.lstrip('/')}", params=q)
         else:
             r = await _http().get(next_url)
-            res = _unwrap(r)
+        res = _unwrap(r)
         pages += 1
         results.extend(res.get("data", []))
         next_url = res.get("paging", {}).get("next")
         if not next_url:
             break
 
-    return {"data": results, "pages_fetched": pages, "has_more": bool(next_url)}
+    return {"data": _redact(results, token), "pages_fetched": pages, "has_more": bool(next_url)}
