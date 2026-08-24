@@ -26,11 +26,31 @@ HOST = os.environ.get("IG_GRAPH_HOST", "graph.facebook.com")
 def _load_accounts() -> dict[str, dict]:
     """IG_ACCOUNTS JSON map (alias -> {user_id, token, ...}); falls back to
     single-account IG_USER_ID + IG_ACCESS_TOKEN as alias 'default'."""
-    raw = os.environ.get("IG_ACCOUNTS")
+    raw = (os.environ.get("IG_ACCOUNTS") or "").strip()
     if raw:
-        return json.loads(raw)
-    return {"default": {"user_id": os.environ["IG_USER_ID"],
-                        "token": os.environ["IG_ACCESS_TOKEN"]}}
+        try:
+            accounts = json.loads(raw)
+        except json.JSONDecodeError as e:
+            sys.exit(f"IG_ACCOUNTS is set but is not valid JSON ({e}). Expected "
+                     '{"default": {"user_id": "...", "token": "..."}}')
+        if not accounts:
+            sys.exit("IG_ACCOUNTS parsed to an empty map, so there is no account "
+                     "to smoke-test. Set it to a JSON map of alias -> "
+                     '{"user_id": ..., "token": ...}')
+        return accounts
+    user_id = os.environ.get("IG_USER_ID")
+    token = os.environ.get("IG_ACCESS_TOKEN")
+    if not user_id or not token:
+        sys.exit(
+            "No Instagram credentials in the environment, so the watchdog cannot "
+            "smoke-test anything.\n"
+            "In CI this means the repo secret IG_ACCOUNTS is missing or empty: set it "
+            "under Settings > Secrets and variables > Actions to a JSON map like\n"
+            '  {"default": {"user_id": "<ig user id>", "token": "<long-lived token>"}}\n'
+            "The workflow passes IG_ACCOUNTS only. IG_USER_ID + IG_ACCESS_TOKEN are "
+            "the local-run fallback."
+        )
+    return {"default": {"user_id": user_id, "token": token}}
 
 ACCOUNTS = _load_accounts()
 _first = next(iter(ACCOUNTS.values()))
