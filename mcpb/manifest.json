@@ -35,7 +35,7 @@
       "type": "string",
       "title": "Graph API Version",
       "description": "Override without rebuilding if the default version sunsets (e.g. v22.0)",
-      "default": "v21.0",
+      "default": "v26.0",
       "required": false
     }
   }

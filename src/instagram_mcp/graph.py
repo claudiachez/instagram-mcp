@@ -17,7 +17,7 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 # The single canonical defaults. The version watchdog bumps DEFAULT_GRAPH_VERSION
 # here (.github/workflows/version-watchdog.yml) and both workflows read it back
 # from this line, so it must stay a plain `NAME = "vN.0"` assignment.
-DEFAULT_GRAPH_VERSION = "v21.0"
+DEFAULT_GRAPH_VERSION = "v26.0"
 DEFAULT_GRAPH_HOST = "graph.facebook.com"
 
 
