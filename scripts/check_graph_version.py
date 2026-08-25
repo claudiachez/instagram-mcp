@@ -61,7 +61,8 @@ MAX_PROBE_AHEAD = 8  # how many future major versions to probe past current
 
 
 def call(version: str, path: str, token: str = None, **params) -> tuple[int, dict]:
-    params["access_token"] = token or TOKEN
+    if token != "":                      # token="" sends no credentials at all
+        params["access_token"] = token or TOKEN
     url = f"https://{HOST}/{version}/{path}?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={"User-Agent": "ig-mcp-version-watch"})
     try:
@@ -77,11 +78,24 @@ def call(version: str, path: str, token: str = None, **params) -> tuple[int, dic
 
 
 def version_exists(version: str) -> bool:
-    """A nonexistent version returns an 'Invalid version' / code 2500 error.
-    Any other response (success, permission error, etc.) means it exists."""
-    status, body = call(version, IG_USER_ID, fields="id")
+    """Meta publishes no version list, so probe /me with NO token: the answer
+    then depends on the version alone, never on permissions.
+
+      live version      -> "An active access token must be used ..."
+      unreleased version-> "Unknown path components: /me"
+
+    That second message is the tell: Meta did not recognise the version prefix,
+    so it read "v29.0" as a node name and /me as an unknown edge under it.
+    Matching 'invalid version' instead (as this did until 2026-08-25) matched
+    nothing ever, so every probe looked live and 'latest' was always
+    current + MAX_PROBE_AHEAD."""
+    status, body = call(version, "me", token="", fields="id")
     msg = (body.get("error") or {}).get("message", "")
-    return not re.search(r"invalid version|unknown version", msg, re.I)
+    if status == 0:  # transport/TLS failure: no answer, so claim nothing
+        print(f"::warning::could not probe {version} ({msg}) — treating it as unreleased")
+        return False
+    return not re.search(r"unknown path components|invalid version|unsupported.{0,20}version",
+                         msg, re.I)
 
 
 def smoke_test(version: str) -> list[str]:
@@ -114,8 +128,14 @@ def main() -> int:
     # 1. Find newest available version
     latest_major = current_major
     for probe in range(current_major + 1, current_major + 1 + MAX_PROBE_AHEAD):
-        if version_exists(f"v{probe}.0"):
-            latest_major = probe
+        # Meta's versions are contiguous: stop at the first gap instead of
+        # taking the highest hit, so one bad probe cannot invent a version.
+        if not version_exists(f"v{probe}.0"):
+            break
+        latest_major = probe
+    if latest_major == current_major + MAX_PROBE_AHEAD:
+        print(f"::warning::probe ceiling hit ({MAX_PROBE_AHEAD} ahead) — "
+              "latest may be underreported, raise MAX_PROBE_AHEAD")
     latest = f"v{latest_major}.0"
     behind = latest_major - current_major
 
