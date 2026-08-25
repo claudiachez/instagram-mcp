@@ -95,6 +95,7 @@ account is configured.
 |---|---|
 | `list_comments` | Top-level comments + nested replies |
 | `get_comment_replies` | Replies under a specific comment |
+| `comment_on_media` | Post a top-level comment on your own media |
 | `reply_to_comment` | Post a reply |
 | `hide_comment` | Hide / unhide |
 | `delete_comment` | Delete a comment you own |

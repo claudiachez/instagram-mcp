@@ -27,7 +27,7 @@ async def test_all_tools_registered():
         "hashtag_top_media", "hashtag_recent_media", "publish_image",
         "publish_reel", "publish_story", "publish_carousel",
         "get_publish_limit", "list_comments", "get_comment_replies",
-        "reply_to_comment", "hide_comment", "delete_comment",
+        "comment_on_media", "reply_to_comment", "hide_comment", "delete_comment",
         "list_conversations", "get_conversation", "send_dm",
         "get_account_insights", "get_media_insights",
         # multi-account + Facebook additions
@@ -210,6 +210,17 @@ async def test_token_redacted_from_paging_urls():
     blob = json.dumps(res)
     assert "test-token" not in blob  # token never leaves in the response
     assert "REDACTED" in blob
+
+
+@respx.mock
+async def test_comment_on_media_posts_to_the_media_comments_edge():
+    """Commenting is POST {media-id}/comments — not the {comment-id}/replies edge
+    reply_to_comment uses, which would notify whoever wrote that comment."""
+    from instagram_mcp.server import comment_on_media
+    route = respx.post(f"{BASE}/456/comments").respond(200, json={"id": "789"})
+    res = await comment_on_media(media_id="456", message="hola")
+    assert res == {"id": "789"}
+    assert "message=hola" in route.calls[0].request.content.decode()
 
 
 def test_httpx_logging_suppressed_so_tokens_dont_hit_logs():

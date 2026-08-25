@@ -383,6 +383,14 @@ async def get_comment_replies(
 
 
 @tool
+async def comment_on_media(
+    account: str | None = None, *, media_id: str, message: str
+) -> dict[str, Any]:
+    """Post a top-level comment on a media item owned by the `account`."""
+    return await graph.post(f"{media_id}/comments", account=account, message=message)
+
+
+@tool
 async def reply_to_comment(
     account: str | None = None, *, comment_id: str, message: str
 ) -> dict[str, Any]:
