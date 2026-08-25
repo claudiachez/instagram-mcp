@@ -128,7 +128,8 @@ def _config(account: str | None = None) -> tuple[str, str]:
     # `or` all the way down: Claude Desktop passes the extension's config fields
     # as env vars even when the user leaves them blank, and a two-arg default
     # would then hand back "" and build https://host//<path>.
-    version = acct.get("graph_version") or os.environ.get("IG_GRAPH_VERSION") or DEFAULT_GRAPH_VERSION
+    version = (acct.get("graph_version") or os.environ.get("IG_GRAPH_VERSION")
+               or DEFAULT_GRAPH_VERSION)
     host = acct.get("host") or os.environ.get("IG_GRAPH_HOST") or DEFAULT_GRAPH_HOST
     return f"https://{host}/{version}", token
 
