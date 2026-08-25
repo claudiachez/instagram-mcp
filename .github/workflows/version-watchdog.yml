@@ -26,23 +26,29 @@ jobs:
           IG_ACCOUNTS: ${{ secrets.IG_ACCOUNTS }}
         run: python scripts/check_graph_version.py
 
+      # Escalation steps pass every value through env: and feed the body as a
+      # ${PLACEHOLDER} template on stdin. Never interpolate ${{ }} into a bash
+      # string: failure text is Meta's error JSON, full of quotes and braces.
+
       # ── ESCALATION 1: production version broken RIGHT NOW ──────────────
       - name: Open URGENT issue if current version is failing
         if: failure() && steps.check.outputs.current_ok == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
+          TITLE: "🚨 URGENT: Graph API ${{ steps.check.outputs.current }} failing live smoke tests"
+          CURRENT: ${{ steps.check.outputs.current }}
+          LATEST: ${{ steps.check.outputs.latest }}
+          FAILURES: ${{ steps.check.outputs.current_failures }}
         run: |
-          gh issue create \
-            --title "🚨 URGENT: Graph API ${{ steps.check.outputs.current }} failing live smoke tests" \
-            --label "urgent" \
-            --body "The version your .mcpb defaults to is failing against the live API.
+          python scripts/open_issue_once.py "$TITLE" --label urgent <<'BODY'
+          The version your .mcpb defaults to is failing against the live API.
 
-          **Failures:** ${{ steps.check.outputs.current_failures }}
+          **Failures:** ${FAILURES}
 
-          **Immediate fix (no rebuild needed):** open Claude Desktop → Settings → Extensions → Instagram Manager → set *Graph API Version* to \`${{ steps.check.outputs.latest }}\`.
+          **Immediate fix (no rebuild needed):** open Claude Desktop → Settings → Extensions → Instagram Manager → set *Graph API Version* to `${LATEST}`.
 
-          Then merge the pending version-bump PR to fix the default." \
-            || echo "issue may already exist"
+          Then merge the pending version-bump PR to fix the default.
+          BODY
 
       # ── PROACTIVE: new version available → tested bump PR ──────────────
       - name: Bump default version in code
@@ -71,30 +77,33 @@ jobs:
 
       # ── ESCALATION 2: new version exists but smoke tests FAILED on it ───
       - name: Open issue if new version breaks the API surface
-        if: steps.check.outputs.behind != '0' && steps.check.outputs.latest_ok == 'false'
+        if: ${{ !cancelled() && steps.check.outputs.behind != '0' && steps.check.outputs.latest_ok == 'false' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          TITLE: "⚠️ Graph API ${{ steps.check.outputs.latest }} released but smoke tests FAIL"
+          CURRENT: ${{ steps.check.outputs.current }}
+          LATEST: ${{ steps.check.outputs.latest }}
+          FAILURES: ${{ steps.check.outputs.latest_failures }}
         run: |
-          gh issue create \
-            --title "⚠️ Graph API ${{ steps.check.outputs.latest }} released but smoke tests FAIL" \
-            --label "api-version" \
-            --body "Meta released ${{ steps.check.outputs.latest }} but read-only smoke tests fail on it — likely a breaking change that needs a code fix before bumping.
+          python scripts/open_issue_once.py "$TITLE" --label api-version <<'BODY'
+          Meta released ${LATEST} but read-only smoke tests fail on it — likely a breaking change that needs a code fix before bumping.
 
-          **Failures:** ${{ steps.check.outputs.latest_failures }}
+          **Failures:** ${FAILURES}
 
-          Current default ${{ steps.check.outputs.current }} still works. You have until its sunset (~2yr from its release) to adapt.
+          Current default ${CURRENT} still works. You have until its sunset (~2yr from its release) to adapt.
 
-          Changelog: https://developers.facebook.com/docs/graph-api/changelog" \
-            || echo "issue may already exist"
+          Changelog: https://developers.facebook.com/docs/graph-api/changelog
+          BODY
 
       # ── ESCALATION 3: falling dangerously behind ────────────────────────
       - name: Warn when ≥3 versions behind
-        if: steps.check.outputs.behind >= 3
+        if: ${{ !cancelled() && steps.check.outputs.behind >= 3 }}
         env:
           GH_TOKEN: ${{ github.token }}
+          TITLE: "⏳ ${{ steps.check.outputs.current }} is ${{ steps.check.outputs.behind }} versions behind — sunset approaching"
+          CURRENT: ${{ steps.check.outputs.current }}
+          BEHIND: ${{ steps.check.outputs.behind }}
         run: |
-          gh issue create \
-            --title "⏳ ${{ steps.check.outputs.current }} is ${{ steps.check.outputs.behind }} versions behind — sunset approaching" \
-            --label "urgent" \
-            --body "Meta supports each Graph version ~2 years. Being ${{ steps.check.outputs.behind }}+ versions behind means the current default is in its final support window. Merge the pending bump PR." \
-            || echo "issue may already exist"
+          python scripts/open_issue_once.py "$TITLE" --label urgent <<'BODY'
+          Meta supports each Graph version ~2 years. Being ${BEHIND}+ versions behind means the current default (${CURRENT}) is in its final support window. Merge the pending bump PR.
+          BODY
