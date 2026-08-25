@@ -14,6 +14,12 @@ import httpx
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 
+# The single canonical defaults. The version watchdog bumps DEFAULT_GRAPH_VERSION
+# here (.github/workflows/version-watchdog.yml) and both workflows read it back
+# from this line, so it must stay a plain `NAME = "vN.0"` assignment.
+DEFAULT_GRAPH_VERSION = "v21.0"
+DEFAULT_GRAPH_HOST = "graph.facebook.com"
+
 
 class GraphError(RuntimeError):
     """Raised when the Graph API returns a 4xx/5xx response."""
@@ -119,8 +125,11 @@ def _config(account: str | None = None) -> tuple[str, str]:
     token = acct.get("token")
     if not token:
         raise RuntimeError(f"Account '{alias}' has no token (IG_ACCESS_TOKEN) configured")
-    version = acct.get("graph_version") or os.environ.get("IG_GRAPH_VERSION", "v21.0")
-    host = acct.get("host") or os.environ.get("IG_GRAPH_HOST", "graph.facebook.com")
+    # `or` all the way down: Claude Desktop passes the extension's config fields
+    # as env vars even when the user leaves them blank, and a two-arg default
+    # would then hand back "" and build https://host//<path>.
+    version = acct.get("graph_version") or os.environ.get("IG_GRAPH_VERSION") or DEFAULT_GRAPH_VERSION
+    host = acct.get("host") or os.environ.get("IG_GRAPH_HOST") or DEFAULT_GRAPH_HOST
     return f"https://{host}/{version}", token
 
 
@@ -178,10 +187,8 @@ def diagnostics() -> dict[str, Any]:
         "accounts_file_exists": path.is_file(),
         "ig_accounts_env_set": bool(os.environ.get("IG_ACCOUNTS")),
         "ig_accounts_file_env": os.environ.get("IG_ACCOUNTS_FILE"),
-        # NB: use `or` (not the 2-arg default) so the release workflow's version grep
-        # `"IG_GRAPH_VERSION", "vN.0"` matches ONLY the canonical default in _config().
-        "graph_host": os.environ.get("IG_GRAPH_HOST") or "graph.facebook.com",
-        "graph_version": os.environ.get("IG_GRAPH_VERSION") or "v21.0",
+        "graph_host": os.environ.get("IG_GRAPH_HOST") or DEFAULT_GRAPH_HOST,
+        "graph_version": os.environ.get("IG_GRAPH_VERSION") or DEFAULT_GRAPH_VERSION,
     }
     try:
         accts = _accounts()

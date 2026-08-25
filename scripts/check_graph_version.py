@@ -56,7 +56,9 @@ ACCOUNTS = _load_accounts()
 _first = next(iter(ACCOUNTS.values()))
 TOKEN = _first["token"]          # version probing is global; any account works
 IG_USER_ID = _first["user_id"]
-GRAPH_PY = Path(__file__).resolve().parent.parent / "src" / "instagram_mcp" / "graph.py"
+REPO = Path(__file__).resolve().parent.parent
+GRAPH_PY = REPO / "src" / "instagram_mcp" / "graph.py"
+MANIFEST = REPO / "mcpb" / "manifest.json"
 MAX_PROBE_AHEAD = 8  # how many future major versions to probe past current
 
 
@@ -116,14 +118,30 @@ def smoke_test(version: str) -> list[str]:
     return failures
 
 
+def warn_on_manifest_drift(current: str) -> None:
+    """The .mcpb ships IG_GRAPH_VERSION from its config field, and an env var beats
+    the code default — so a manifest left behind silently pins users to the old
+    version no matter what graph.py says."""
+    try:
+        manifest = json.loads(MANIFEST.read_text())
+        shipped = manifest["user_config"]["ig_graph_version"]["default"]
+    except (OSError, KeyError, json.JSONDecodeError) as e:
+        print(f"::warning::could not read the .mcpb default version ({e})")
+        return
+    if shipped != current:
+        print(f"::warning::mcpb/manifest.json still defaults to {shipped} while the "
+              f"code default is {current} — the bundle would pin users to {shipped}")
+
+
 def main() -> int:
     src = GRAPH_PY.read_text()
-    m = re.search(r'"IG_GRAPH_VERSION",\s*"v(\d+)\.0"', src)
+    m = re.search(r'DEFAULT_GRAPH_VERSION\s*=\s*"v(\d+)\.0"', src)
     if not m:
         print("::error::Could not find default version in graph.py")
         return 2
     current_major = int(m.group(1))
     current = f"v{current_major}.0"
+    warn_on_manifest_drift(current)
 
     # 1. Find newest available version
     latest_major = current_major

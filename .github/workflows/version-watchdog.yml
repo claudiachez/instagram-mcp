@@ -53,9 +53,23 @@ jobs:
       # ── PROACTIVE: new version available → tested bump PR ──────────────
       - name: Bump default version in code
         if: steps.check.outputs.behind != '0' && steps.check.outputs.latest_ok == 'true'
+        env:
+          CURRENT: ${{ steps.check.outputs.current }}
+          LATEST: ${{ steps.check.outputs.latest }}
         run: |
-          sed -i 's/"IG_GRAPH_VERSION", "${{ steps.check.outputs.current }}"/"IG_GRAPH_VERSION", "${{ steps.check.outputs.latest }}"/' src/instagram_mcp/graph.py
-          sed -i 's/^IG_GRAPH_VERSION=.*/IG_GRAPH_VERSION=${{ steps.check.outputs.latest }}/' .env.example
+          set -euo pipefail
+          sed -i "s/DEFAULT_GRAPH_VERSION = \"$CURRENT\"/DEFAULT_GRAPH_VERSION = \"$LATEST\"/" src/instagram_mcp/graph.py
+          sed -i "s/^IG_GRAPH_VERSION=.*/IG_GRAPH_VERSION=$LATEST/" .env.example
+          # The .mcpb config field overrides the code default, so a bump that skips
+          # the manifest ships a bundle that still asks for the old version.
+          python3 - <<'PY'
+          import json, os, pathlib
+          p = pathlib.Path("mcpb/manifest.json")
+          m = json.loads(p.read_text())
+          m["user_config"]["ig_graph_version"]["default"] = os.environ["LATEST"]
+          p.write_text(json.dumps(m, indent=2) + "\n")
+          PY
+          git diff --stat  # the bump must be visible in the log, not assumed
 
       - name: Open bump PR
         if: steps.check.outputs.behind != '0' && steps.check.outputs.latest_ok == 'true'

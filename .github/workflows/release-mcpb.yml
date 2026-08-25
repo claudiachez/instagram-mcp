@@ -35,7 +35,7 @@ jobs:
           # Install THIS fork's source (not PyPI) + runtime deps, pure-python wheels only
           pip install . --target bundle/server/lib --only-binary :all: || pip install . --target bundle/server/lib
           # Sync manifest default version with the code default
-          VERSION=$(grep -oP '"IG_GRAPH_VERSION", "\Kv[0-9]+\.0' src/instagram_mcp/graph.py)
+          VERSION=$(grep -oP 'DEFAULT_GRAPH_VERSION = "\Kv[0-9]+\.0' src/instagram_mcp/graph.py)
           python3 - "$VERSION" << 'EOF'
           import json, sys
           m = json.load(open("mcpb/manifest.json"))
@@ -52,7 +52,7 @@ jobs:
         run: |
           # Seconds in the tag avoid collisions when the workflow is re-run within a minute.
           TAG="build-$(date +%Y%m%d-%H%M%S)"
-          VERSION="$(grep -oP '"IG_GRAPH_VERSION", "\Kv[0-9]+\.0' src/instagram_mcp/graph.py | head -1)"
+          VERSION="$(grep -oP 'DEFAULT_GRAPH_VERSION = "\Kv[0-9]+\.0' src/instagram_mcp/graph.py | head -1)"
           NOTES="Drag instagram-mcp.mcpb into Claude Desktop → Settings → Extensions to update. Default Graph API version: ${VERSION}"
           # Retry: gh release create hits the GitHub API, which can 503 during incidents.
           for attempt in 1 2 3 4 5; do
